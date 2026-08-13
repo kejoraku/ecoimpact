@@ -148,14 +148,15 @@ if procesar_ia:
                 }}
                 """
                 
-                # Modelo oficial actual de producción
+                # Cambiá esta línea de tu bloque final
                 respuesta = client.models.generate_content(
-                    model='gemini-2.5-flash',
+                    model='gemini-2.0-flash',
                     contents=prompt_contenido,
                     config=types.GenerateContentConfig(
                         response_mime_type="application/json",
                     ),
-                )
+                )   
+
                 
                 resultado_json = json.loads(respuesta.text)
                 status_progreso.update(label="¡Informe técnico generado con éxito!", state="complete")
