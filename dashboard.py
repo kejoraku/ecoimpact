@@ -153,11 +153,17 @@ if procesar_ia:
                     input=prompt_contenido,
                     response_format={"type": "object"}
                 )
-                
-                # Extraemos el texto crudo generado
+                                
+                # --- EXTRACCIÓN ROBUSTA DE LA RESPUESTA ---
+                # Intentamos primero con output_text; si viene vacío, barremos los pasos internos de la interacción
                 texto_json_puro = interaction.output_text
-                resultado_json = json.loads(texto_json_puro)
-                
+
+                if not texto_json_puro and hasattr(interaction, 'steps') and interaction.steps:
+                    texto_json_puro = interaction.steps[-1].content.text
+
+                # Convertimos el texto recuperado a un diccionario de Python
+                resultado_json = json.loads(texto_json_puro) if texto_json_puro else {}
+
                 status_progreso.update(label="¡Informe técnico generado con éxito!", state="complete")
                 
                 # Renderizado de métricas en la interfaz de Streamlit
