@@ -133,7 +133,7 @@ if procesar_ia:
             try:
                 from google import genai
                 
-                # Inicialización limpia
+                # Inicialización limpia de la IA
                 client = genai.Client(api_key=str(api_key_openai).strip())
                 paquete_contexto_ia = json.dumps(datos_para_la_ia, ensure_ascii=False)
                 
@@ -147,16 +147,15 @@ if procesar_ia:
                 }}
                 """
                 
-                # REEMPLAZO NUEVO: Cambiamos models.generate_content por interactions.create
-                # Pasamos la configuración como un diccionario plano de Python (sin wrappers)
+                # CORRECCIÓN DE PARÁMETROS: Cambiamos 'contents' por 'input' para cumplir con la documentación oficial
                 interaction = client.interactions.create(
-                    model='gemini-2.5-flash',  # El modelo vuelve a funcionar bajo la nueva API de interacciones
-                    contents=prompt_contenido,
-                    response_format="application/json"  # Se pasa como parámetro de primer nivel
+                    model='gemini-2.5-flash',
+                    input=prompt_contenido,
+                    response_format="application/json"
                 )
                 
-                # REEMPLAZO NUEVO: La respuesta ahora se extrae del último paso de la interacción
-                texto_json_puro = interaction.steps[-1].content[0].text
+                # CORRECCIÓN DE LECTURA: Usamos el atajo nativo 'output_text' para extraer el JSON
+                texto_json_puro = interaction.output_text
                 resultado_json = json.loads(texto_json_puro)
                 
                 status_progreso.update(label="¡Informe técnico generado con éxito!", state="complete")
