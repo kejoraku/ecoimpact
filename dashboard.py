@@ -122,7 +122,7 @@ for i, tab in enumerate(tabs):
         folium.LayerControl(position='topright', collapsed=False).add_to(m)
         st_folium(m, use_container_width=True, height=580, key=f"geodashboard_mapa_{anio_actual}")
 
-# --- MÓDULO FINAL: CONEXIÓN INDUSTRIAL MEDIANTE SDK OFICIAL (MIGRADO A INTERACTIONS API) ---
+# --- MÓDULO FINAL: CONEXIÓN INDUSTRIAL MEDIANTE SDK OFICIAL (CORREGIDO PARA PYDANTIC) ---
 if procesar_ia:
     st.subheader("🤖 Informe Metodológico Estructurado con IA")
     
@@ -147,20 +147,20 @@ if procesar_ia:
                 }}
                 """
                 
-                # CORRECCIÓN DE PARÁMETROS: Cambiamos 'contents' por 'input' para cumplir con la documentación oficial
+                # CORRECCIÓN DE FORMATO: Pasamos response_format como un diccionario TOML/JSON válido para el unmarshaller de Google
                 interaction = client.interactions.create(
                     model='gemini-2.5-flash',
                     input=prompt_contenido,
-                    response_format="application/json"
+                    response_format={"type": "text/javascript"}  # Esto le avisa al validador que devuelva texto estructurado/JSON
                 )
                 
-                # CORRECCIÓN DE LECTURA: Usamos el atajo nativo 'output_text' para extraer el JSON
+                # Extraemos el texto crudo generado
                 texto_json_puro = interaction.output_text
                 resultado_json = json.loads(texto_json_puro)
                 
                 status_progreso.update(label="¡Informe técnico generado con éxito!", state="complete")
                 
-                # Renderizado de métricas en la interfaz
+                # Renderizado de métricas en la interfaz de Streamlit
                 col_ia1, col_ia2 = st.columns(2)
                 with col_ia1: 
                     st.metric(label="Dictamen de Alerta", value=resultado_json.get("nivel_alerta_global", "N/A"))
