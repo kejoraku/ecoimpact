@@ -122,17 +122,16 @@ for i, tab in enumerate(tabs):
         folium.LayerControl(position='topright', collapsed=False).add_to(m)
         st_folium(m, use_container_width=True, height=580, key=f"geodashboard_mapa_{anio_actual}")
 
-# --- MÓDULO FINAL: CONEXIÓN INDUSTRIAL MEDIANTE SDK OFICIAL ---
+# --- MÓDULO FINAL: CONEXIÓN INDUSTRIAL MEDIANTE SDK OFICIAL (MIGRADO A INTERACTIONS API) ---
 if procesar_ia:
     st.subheader("🤖 Informe Metodológico Estructurado con IA")
     
     if not api_key_openai:
         st.warning("⚠️ Por favor, ingresa tu Google Gemini API Key en la barra lateral izquierda.")
     else:
-        with st.status("🤖 Conectando con Google Gemini mediante SDK Oficial...", expanded=True) as status_progreso:
+        with st.status("🤖 Conectando con Google Gemini mediante Interactions API...", expanded=True) as status_progreso:
             try:
                 from google import genai
-                from google.genai import types
                 
                 # Inicialización limpia
                 client = genai.Client(api_key=str(api_key_openai).strip())
@@ -148,17 +147,18 @@ if procesar_ia:
                 }}
                 """
                 
-                # Cambiá esta línea de tu bloque final
-                respuesta = client.models.generate_content(
-                    model='gemini-2.0-flash',
+                # REEMPLAZO NUEVO: Cambiamos models.generate_content por interactions.create
+                # Pasamos la configuración como un diccionario plano de Python (sin wrappers)
+                interaction = client.interactions.create(
+                    model='gemini-2.5-flash',  # El modelo vuelve a funcionar bajo la nueva API de interacciones
                     contents=prompt_contenido,
-                    config=types.GenerateContentConfig(
-                        response_mime_type="application/json",
-                    ),
-                )   
-
+                    response_format="application/json"  # Se pasa como parámetro de primer nivel
+                )
                 
-                resultado_json = json.loads(respuesta.text)
+                # REEMPLAZO NUEVO: La respuesta ahora se extrae del último paso de la interacción
+                texto_json_puro = interaction.steps[-1].content[0].text
+                resultado_json = json.loads(texto_json_puro)
+                
                 status_progreso.update(label="¡Informe técnico generado con éxito!", state="complete")
                 
                 # Renderizado de métricas en la interfaz
@@ -173,5 +173,5 @@ if procesar_ia:
                     st.json(resultado_json)
                     
             except Exception as e:
-                status_progreso.update(label="🚨 Error en el procesamiento del SDK", state="error")
+                status_progreso.update(label="🚨 Error en el procesamiento de Interactions", state="error")
                 st.exception(e)
