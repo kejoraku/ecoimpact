@@ -154,17 +154,25 @@ if procesar_ia:
                 # 2. Extracción del texto crudo
                 texto_json_puro = interaction.output_text if interaction.output_text else ""
                 
-                # --- TRUCO DE CONTROL TOTAL (ANTI-ATTRIBUTE ERROR) ---
+                # --- LIMPIEZA DE DOBLE CODIFICACIÓN (CORRECCIÓN VISUAL) ---
+                # Si el texto viene envuelto en comillas externas como un String gigante, le quitamos las puntas
+                texto_json_puro = texto_json_puro.strip()
+                if texto_json_puro.startswith('"') and texto_json_puro.endswith('"'):
+                    # Quitamos las comillas externas
+                    texto_json_puro = texto_json_puro[1:-1]
+                    # Convertimos los caracteres de escape '\\"' a comillas normales
+                    texto_json_puro = texto_json_puro.replace('\\"', '"').replace('\\\\', '\\')
+
                 # Usamos regex para capturar todo lo que esté estrictamente entre llaves { ... }
                 resultado_json = {}
                 busqueda_bloque = re.search(r"\{.*\}", texto_json_puro, re.DOTALL)
                 
                 if busqueda_bloque:
                     try:
-                        # Si encontramos el bloque JSON limpio, lo parseamos
                         resultado_json = json.loads(busqueda_bloque.group(0))
                     except:
                         pass
+
                 
                 # Resguardo: si el diccionario sigue vacío por una falla externa, creamos las claves por defecto
                 if not isinstance(resultado_json, dict) or not resultado_json:
