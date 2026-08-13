@@ -1,0 +1,7 @@
+streamlit
+streamlit-folium
+folium
+requests
+pygbif
+earthengine-api
+google-genai
