@@ -149,7 +149,7 @@ if procesar_ia:
                 
                 # CORRECCIÓN DEFINITIVA: Usamos {"type": "object"} que es el valor soportado por la API
                 interaction = client.interactions.create(
-                    model='gemini-2.5-flash-lite',  # <--- CAMBIAR SOLO ESTO
+                    model='gemini-1.5-flash',  # <--- CAMBIAR SOLO ESTO
                     input=prompt_contenido,
                     response_format={"type": "object"}
                 )
