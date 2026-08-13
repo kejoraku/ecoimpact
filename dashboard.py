@@ -154,15 +154,26 @@ if procesar_ia:
                     response_format={"type": "object"}
                 )
                                 
-                # --- EXTRACCIÓN ROBUSTA DE LA RESPUESTA ---
-                # Intentamos primero con output_text; si viene vacío, barremos los pasos internos de la interacción
-                texto_json_puro = interaction.output_text
-
-                if not texto_json_puro and hasattr(interaction, 'steps') and interaction.steps:
-                    texto_json_puro = interaction.steps[-1].content.text
-
-                # Convertimos el texto recuperado a un diccionario de Python
-                resultado_json = json.loads(texto_json_puro) if texto_json_puro else {}
+                 # 1. Ejecutamos la consulta normalmente
+                interaction = client.interactions.create(
+                    model='gemini-3.5-flash', # O el modelo que te haya funcionado recién
+                    input=prompt_contenido,
+                    response_format={"type": "object"}
+                )
+                
+                # 2. BLOQUE DE DIAGNÓSTICO: Frenamos acá e imprimimos la estructura en la pantalla
+                st.subheader("🔍 Desglose y Estructura del Objeto Devuelto por Google")
+                
+                # Convertimos el objeto a un diccionario o texto para poder inspeccionarlo visualmente
+                try:
+                    st.write("Propiedades disponibles en 'interaction':", dir(interaction))
+                    st.json(interaction.__dict__)
+                except Exception as error_inspeccion:
+                    st.write("No se pudo convertir a JSON directo, imprimiendo como texto:")
+                    st.text(str(interaction))
+                
+                # Forzamos una parada para que no intente dibujar las métricas vacías de abajo
+                st.stop()
 
                 status_progreso.update(label="¡Informe técnico generado con éxito!", state="complete")
                 
