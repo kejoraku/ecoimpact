@@ -122,7 +122,7 @@ for i, tab in enumerate(tabs):
         folium.LayerControl(position='topright', collapsed=False).add_to(m)
         st_folium(m, use_container_width=True, height=580, key=f"geodashboard_mapa_{anio_actual}")
 
-# --- MÓDULO FINAL: CONEXIÓN INDUSTRIAL MEDIANTE SDK OFICIAL (CORREGIDO PARA PYDANTIC) ---
+# --- MÓDULO FINAL: CONEXIÓN INDUSTRIAL MEDIANTE SDK OFICIAL (MIGRADO A INTERACTIONS API) ---
 if procesar_ia:
     st.subheader("🤖 Informe Metodológico Estructurado con IA")
     
@@ -147,11 +147,11 @@ if procesar_ia:
                 }}
                 """
                 
-                # CORRECCIÓN DE FORMATO: Pasamos response_format como un diccionario TOML/JSON válido para el unmarshaller de Google
+                # CORRECCIÓN DEFINITIVA: Usamos {"type": "object"} que es el valor soportado por la API
                 interaction = client.interactions.create(
                     model='gemini-2.5-flash',
                     input=prompt_contenido,
-                    response_format={"type": "text/javascript"}  # Esto le avisa al validador que devuelva texto estructurado/JSON
+                    response_format={"type": "object"}
                 )
                 
                 # Extraemos el texto crudo generado
