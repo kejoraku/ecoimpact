@@ -8,16 +8,28 @@ from calculos_gee import obtener_todas_las_capas_gee
 import subprocess
 import sys
 
-# Este bloque revisa si tenés la librería y la instala sola si falta
+# --- PIPELINE AUTOMÁTICO DE LIBRERÍAS ---
 try:
     from google import genai
 except ImportError:
     subprocess.check_call([sys.executable, "-m", "pip", "install", "google-genai"])
     from google import genai
 
-# Inicializar Earth Engine con tu proyecto obligatorio
+# --- INICIALIZACIÓN INDUSTRIAL DE GOOGLE EARTH ENGINE ---
 try:
-    ee.Initialize(project='ee-raanidg')
+    # Si la app corre en internet, lee la clave metida en tres comillas desde tus secretos
+    if "gcp" in st.secrets and "service_account" in st.secrets["gcp"]:
+        json_en_texto = st.secrets["gcp"]["service_account"]
+        config_credenciales = json.loads(json_en_texto)
+        
+        credenciales_oficiales = ee.ServiceAccountCredentials(
+            config_credenciales["client_email"],
+            key_data=json.dumps(config_credenciales)
+        )
+        ee.Initialize(credentials=credenciales_oficiales, project='ee-raanidg')
+    else:
+        # Fallback de seguridad para tu entorno local
+        ee.Initialize(project='ee-raanidg')
 except Exception as e:
     st.error(f"⚠️ GEE no inicializado. Revisa tu consola: {e}")
 
@@ -136,15 +148,14 @@ if procesar_ia:
                 }}
                 """
                 
-                # Reemplazá el modelo por 'gemini-3.6-flash' o 'gemini-flash-latest'
+                # Modelo oficial actual de producción
                 respuesta = client.models.generate_content(
-                    model='gemini-3.6-flash',
+                    model='gemini-2.5-flash',
                     contents=prompt_contenido,
                     config=types.GenerateContentConfig(
                         response_mime_type="application/json",
                     ),
                 )
-
                 
                 resultado_json = json.loads(respuesta.text)
                 status_progreso.update(label="¡Informe técnico generado con éxito!", state="complete")
@@ -157,7 +168,7 @@ if procesar_ia:
                     st.metric(label="Tiempo de Recuperación", value=f"{resultado_json.get('anos_recuperacion_estimados', 0)} años")
                 
                 st.info(f"**Análisis Metodológico del Ecólogo (IA):**\n\n{resultado_json.get('diagnostico_metodologico')}")
-                with st.expander("🔍 Ver Estructura JSON de Salida Dirigida"): 
+                with st.expander("🔍 Ver Estructura JSON de Salida Dirigida (Requisito de Cátedra)"): 
                     st.json(resultado_json)
                     
             except Exception as e:
