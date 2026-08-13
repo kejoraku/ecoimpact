@@ -147,37 +147,23 @@ if procesar_ia:
                 }}
                 """
                 
-                # CORRECCIÓN DEFINITIVA: Usamos {"type": "object"} que es el valor soportado por la API
+                                # 1. Ejecutamos la consulta con el tipo corregido para Interactions API
                 interaction = client.interactions.create(
-                    model='gemini-3.6-flash',  # <--- CAMBIAR SOLO ESTO
+                    model='gemini-3.5-flash', 
                     input=prompt_contenido,
-                    response_format={"type": "object"}
-                )
-                                
-                 # 1. Ejecutamos la consulta normalmente
-                interaction = client.interactions.create(
-                    model='gemini-3.5-flash', # O el modelo que te haya funcionado recién
-                    input=prompt_contenido,
-                    response_format={"type": "object"}
+                    response_format={"type": "string"}  # Evita el bloqueo del objeto vacío y permite salida libre
                 )
                 
-                # 2. BLOQUE DE DIAGNÓSTICO: Frenamos acá e imprimimos la estructura en la pantalla
-                st.subheader("🔍 Desglose y Estructura del Objeto Devuelto por Google")
+                # 2. Extraemos el texto crudo del informe generado
+                texto_json_puro = interaction.output_text
                 
-                # Convertimos el objeto a un diccionario o texto para poder inspeccionarlo visualmente
-                try:
-                    st.write("Propiedades disponibles en 'interaction':", dir(interaction))
-                    st.json(interaction.__dict__)
-                except Exception as error_inspeccion:
-                    st.write("No se pudo convertir a JSON directo, imprimiendo como texto:")
-                    st.text(str(interaction))
-                
-                # Forzamos una parada para que no intente dibujar las métricas vacías de abajo
-                st.stop()
+                # 3. Convertimos el texto string a diccionario real de Python
+                resultado_json = json.loads(texto_json_puro)
 
+                # 4. Actualizamos el estado de la barra de progreso
                 status_progreso.update(label="¡Informe técnico generado con éxito!", state="complete")
                 
-                # Renderizado de métricas en la interfaz de Streamlit
+                # 5. Renderizado de métricas en la interfaz de Streamlit
                 col_ia1, col_ia2 = st.columns(2)
                 with col_ia1: 
                     st.metric(label="Dictamen de Alerta", value=resultado_json.get("nivel_alerta_global", "N/A"))
