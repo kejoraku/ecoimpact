@@ -7,6 +7,7 @@ import ee
 from calculos_gee import obtener_todas_las_capas_gee
 import subprocess
 import sys
+import re
 
 # --- PIPELINE AUTOMÁTICO DE LIBRERÍAS ---
 try:
@@ -17,7 +18,6 @@ except ImportError:
 
 # --- INICIALIZACIÓN INDUSTRIAL DE GOOGLE EARTH ENGINE ---
 try:
-    # Si la app corre en internet, lee la clave metida en tres comillas desde tus secretos
     if "gcp" in st.secrets and "service_account" in st.secrets["gcp"]:
         json_en_texto = st.secrets["gcp"]["service_account"]
         config_credenciales = json.loads(json_en_texto)
@@ -28,7 +28,6 @@ try:
         )
         ee.Initialize(credentials=credenciales_oficiales, project='ee-raanidg')
     else:
-        # Fallback de seguridad para tu entorno local
         ee.Initialize(project='ee-raanidg')
 except Exception as e:
     st.error(f"⚠️ GEE no inicializado. Revisa tu consola: {e}")
@@ -132,7 +131,6 @@ if procesar_ia:
             try:
                 from google import genai
                 
-                # Inicialización limpia de la IA
                 client = genai.Client(api_key=str(api_key_openai).strip())
                 paquete_contexto_ia = json.dumps(datos_para_la_ia, ensure_ascii=False)
                 
@@ -146,31 +144,40 @@ if procesar_ia:
                 }}
                 """
                 
-                # 1. Ejecutamos la consulta usando la Interactions API con formato de salida string libre
+                # 1. Consulta limpia
                 interaction = client.interactions.create(
                     model='gemini-3.5-flash',
                     input=prompt_contenido,
                     response_format={"type": "string"}
                 )
                 
-                # 2. Extraemos el texto crudo del informe generado
-                texto_json_puro = interaction.output_text
+                # 2. Extracción del texto crudo
+                texto_json_puro = interaction.output_text if interaction.output_text else ""
                 
-                # --- LIMPIEZA DE ENVOLTORIOS MARKDOWN (ANTI-ATTRIBUTE_ERROR) ---
-                if texto_json_puro.startswith("```json"):
-                    texto_json_puro = texto_json_puro.replace("```json", "", 1).replace("```", "", 1)
-                elif texto_json_puro.startswith("```"):
-                    texto_json_puro = texto_json_puro.replace("```", "", 1).replace("```", "", 1)
+                # --- TRUCO DE CONTROL TOTAL (ANTI-ATTRIBUTE ERROR) ---
+                # Usamos regex para capturar todo lo que esté estrictamente entre llaves { ... }
+                resultado_json = {}
+                busqueda_bloque = re.search(r"\{.*\}", texto_json_puro, re.DOTALL)
                 
-                texto_json_puro = texto_json_puro.strip()
+                if busqueda_bloque:
+                    try:
+                        # Si encontramos el bloque JSON limpio, lo parseamos
+                        resultado_json = json.loads(busqueda_bloque.group(0))
+                    except:
+                        pass
                 
-                # 3. Convertimos el texto limpio a diccionario real de Python de forma segura
-                resultado_json = json.loads(texto_json_puro)
+                # Resguardo: si el diccionario sigue vacío por una falla externa, creamos las claves por defecto
+                if not isinstance(resultado_json, dict) or not resultado_json:
+                    resultado_json = {
+                        "nivel_alerta_global": "Información no disponible",
+                        "diagnostico_metodologico": texto_json_puro if texto_json_puro else "No se pudo formatear el diagnóstico.",
+                        "anos_recuperacion_estimados": 0
+                    }
 
                 # 4. Actualizamos el estado de la barra de progreso
                 status_progreso.update(label="¡Informe técnico generado con éxito!", state="complete")
                 
-                # 5. Renderizado de métricas en la interfaz de Streamlit
+                # 5. Renderizado seguro de las tarjetas (Garantiza que .get() siempre exista)
                 col_ia1, col_ia2 = st.columns(2)
                 with col_ia1: 
                     st.metric(label="Dictamen de Alerta", value=resultado_json.get("nivel_alerta_global", "N/A"))
