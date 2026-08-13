@@ -74,7 +74,6 @@ procesar_ia = st.sidebar.button("🤖 Generar Informe Ecológico con IA")
 st.subheader("🗺️ Capas Espaciales Automatizadas")
 tabs = st.tabs([f"Año {anio}" for anio in anios_a_procesar])
 datos_para_la_ia = {}
-
 for i, tab in enumerate(tabs):
     anio_actual = anios_a_procesar[i]
     with tab:
@@ -147,9 +146,9 @@ if procesar_ia:
                 }}
                 """
                 
-                # 1. Ejecutamos la consulta con el tipo corregido para Interactions API
+                # 1. Ejecutamos la consulta usando la Interactions API con formato de salida string libre
                 interaction = client.interactions.create(
-                    model='gemini-3.5-flash', 
+                    model='gemini-3.5-flash',
                     input=prompt_contenido,
                     response_format={"type": "string"}
                 )
@@ -158,13 +157,11 @@ if procesar_ia:
                 texto_json_puro = interaction.output_text
                 
                 # --- LIMPIEZA DE ENVOLTORIOS MARKDOWN (ANTI-ATTRIBUTE_ERROR) ---
-                # Si la IA devolvió el JSON envuelto en ```json ... ```, le quitamos las puntas
                 if texto_json_puro.startswith("```json"):
                     texto_json_puro = texto_json_puro.replace("```json", "", 1).replace("```", "", 1)
                 elif texto_json_puro.startswith("```"):
                     texto_json_puro = texto_json_puro.replace("```", "", 1).replace("```", "", 1)
                 
-                # Borramos espacios en blanco invisibles al principio y al final
                 texto_json_puro = texto_json_puro.strip()
                 
                 # 3. Convertimos el texto limpio a diccionario real de Python de forma segura
@@ -172,3 +169,18 @@ if procesar_ia:
 
                 # 4. Actualizamos el estado de la barra de progreso
                 status_progreso.update(label="¡Informe técnico generado con éxito!", state="complete")
+                
+                # 5. Renderizado de métricas en la interfaz de Streamlit
+                col_ia1, col_ia2 = st.columns(2)
+                with col_ia1: 
+                    st.metric(label="Dictamen de Alerta", value=resultado_json.get("nivel_alerta_global", "N/A"))
+                with col_ia2: 
+                    st.metric(label="Tiempo de Recuperación", value=f"{resultado_json.get('anos_recuperacion_estimados', 0)} años")
+                
+                st.info(f"**Análisis Metodológico del Ecólogo (IA):**\n\n{resultado_json.get('diagnostico_metodologico')}")
+                with st.expander("🔍 Ver Estructura JSON de Salida Dirigida (Requisito de Cátedra)"): 
+                    st.json(resultado_json)
+                    
+            except Exception as e:
+                status_progreso.update(label="🚨 Error en el procesamiento de Interactions", state="error")
+                st.exception(e)
